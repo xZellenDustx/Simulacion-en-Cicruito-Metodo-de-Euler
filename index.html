@@ -323,6 +323,21 @@
                 gap: 10px;
             }
         }
+                .circuit-diagram {
+            background-color: black;
+            border-radius: var(--border-radius);
+            padding: 20px;
+            box-shadow: var(--box-shadow);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 300px;
+        }
+        
+        .circuit-diagram img {
+            max-width: 100%;
+            height: auto;
+        }
     </style>
 </head>
 <body>
@@ -406,12 +421,23 @@
                 </div>
             </div>
         </div>
-
+        
+        
+ 
         <!-- Gráfico movido debajo de los contenedores -->
         <div class="chart-container">
             <h2 class="panel-title"><i class="fas fa-chart-line"></i> Gráfico de Resultados</h2>
             <canvas id="resultsChart"></canvas>
         </div>
+        
+            <div class="circuit-diagram">
+                <img src="https://www.bing.com/th/id/OGC.2925a1e0732fd3a5b0e7ca1c6e04ac09?pid=1.7&rurl=https%3a%2f%2fi.imgflip.com%2f7dd4dm.gif&ehk=RytkzcVjPpBh%2fAydGJ0MYBXXb%2fnvUuq8xAxkn1uvRCs%3d" alt="Circuito RLC Paralelo" id="circuit-img-paralelo">
+            </div>
+            
+            <div class="circuit-diagram">
+                <img src="https://www.bing.com/th/id/OGC.30e06c87a8008d7308668f53bf16590e?pid=1.7&rurl=https%3a%2f%2fmedia.tenor.com%2fT3RbJGtBwFMAAAAC%2fmeme.gif&ehk=iBmuxztuAmqJD0MJt%2b0zE%2fxdETEfsW7wA%2b2xY9tWOpc%3d" alt="Circuito RLC Paralelo" id="circuit-img-paralelo">
+            </div>
+            
     </div>
 
     <script>
