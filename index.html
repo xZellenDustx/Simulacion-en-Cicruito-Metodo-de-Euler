@@ -506,8 +506,7 @@
                     // Aplicar método de Euler
                     I = I + h * dIdt;
                     Vc = Vc + h * dVcdt;
-                    
-                    t = parseFloat((t + h).toFixed(10)); // Evitar errores de precisión
+                    t = t + h;
                     
                     // Verificar valores numéricos extremos
                     if (Math.abs(I) > 1e10 || Math.abs(Vc) > 1e10) {
