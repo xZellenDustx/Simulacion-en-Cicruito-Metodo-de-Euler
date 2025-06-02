@@ -12,7 +12,7 @@
         :root {
             --primary-color: #f0cd0a;
             --secondary-color: #ffe030;
-            --accent-color: #4895ef;
+            --accent-color: #ffe030;
             --success-color: #4cc9f0;
             --danger-color: #f72585;
             --light-color: #f8f9fa;
@@ -85,7 +85,7 @@
             display: flex;
             flex-wrap: wrap;
             gap: 30px;
-            margin-bottom: 30px;
+            margin-bottom: 20px;
         }
 
         .panel {
@@ -169,6 +169,10 @@
             position: relative;
             height: 400px;
             margin-bottom: 30px;
+            background-color: white;
+            border-radius: var(--border-radius);
+            box-shadow: var(--box-shadow);
+            padding: 25px;
         }
 
         .results-container {
@@ -176,7 +180,6 @@
             border-radius: var(--border-radius);
             box-shadow: var(--box-shadow);
             padding: 25px;
-            margin-top: 20px;
         }
 
         .table-responsive {
@@ -256,6 +259,47 @@
             color: white;
         }
 
+        .warning-message {
+            background-color: #fff3cd;
+            color: #856404;
+            padding: 10px 15px;
+            border-radius: var(--border-radius);
+            margin-bottom: 20px;
+            border-left: 4px solid #ffeeba;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .warning-message i {
+            color: #ffc107;
+        }
+
+        .results-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .export-btn {
+            background-color: var(--success-color);
+            color: white;
+            border: none;
+            padding: 8px 15px;
+            border-radius: var(--border-radius);
+            cursor: pointer;
+            font-size: 0.9rem;
+            transition: var(--transition);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .export-btn:hover {
+            background-color: #3aa8d8;
+        }
+
         @media (max-width: 768px) {
             .container {
                 flex-direction: column;
@@ -271,6 +315,12 @@
             
             h1 {
                 font-size: 1.5rem;
+            }
+            
+            .results-header {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 10px;
             }
         }
     </style>
@@ -292,22 +342,22 @@
                 
                 <div class="form-group">
                     <label for="resistance">Resistencia (R) en Ω:</label>
-                    <input type="number" id="resistance" value="10" step="0.1" min="0">
+                    <input type="number" id="resistance" value="100" step="0.1" min="0">
                 </div>
                 
                 <div class="form-group">
                     <label for="inductance">Inductancia (L) en H:</label>
-                    <input type="number" id="inductance" value="1" step="0.1" min="0.01">
+                    <input type="number" id="inductance" value="0.1" step="0.01" min="0.001">
                 </div>
                 
                 <div class="form-group">
                     <label for="capacitance">Capacitancia (C) en F:</label>
-                    <input type="number" id="capacitance" value="0.1" step="0.01" min="0.001">
+                    <input type="number" id="capacitance" value="0.001" step="0.0001" min="0.0001">
                 </div>
                 
                 <div class="form-group">
                     <label for="voltage">Voltaje de fuente (V) en V:</label>
-                    <input type="number" id="voltage" value="5" step="0.1">
+                    <input type="number" id="voltage" value="10" step="0.1">
                 </div>
                 
                 <div class="form-group">
@@ -322,12 +372,12 @@
                 
                 <div class="form-group">
                     <label for="stepSize">Tamaño de paso (h) en s:</label>
-                    <input type="number" id="stepSize" value="0.01" step="0.001" min="0.001">
+                    <input type="number" id="stepSize" value="0.0001" step="0.00001" min="0.00001">
                 </div>
                 
                 <div class="form-group">
                     <label for="simulationTime">Tiempo de simulación en s:</label>
-                    <input type="number" id="simulationTime" value="1" step="0.1" min="0.1">
+                    <input type="number" id="simulationTime" value="0.05" step="0.01" min="0.01">
                 </div>
                 
                 <div class="form-group">
@@ -341,34 +391,39 @@
                 <button onclick="simulate()">
                     <i class="fas fa-play"></i> Simular
                 </button>
-                
             </div>
             
-            
             <div class="panel">
-                <h2 class="panel-title"><i class="fas fa-chart-line"></i> Resultados de la Simulación</h2>
-                <div class="chart-container">
-                    <canvas id="resultsChart"></canvas>
-                </div>
-                
+                <h2 class="panel-title"><i class="fas fa-table"></i> Resultados Numéricos</h2>
+                <div id="warningContainer"></div>
                 <div class="results-container">
-                    <h3 class="panel-title"><i class="fas fa-table"></i> Datos Numéricos</h3>
                     <div class="table-responsive">
                         <table class="value-table" id="resultsTable">
                             <!-- La tabla se generará aquí -->
                         </table>
                     </div>
+                    <div id="responseInfoContainer"></div>
                 </div>
             </div>
         </div>
-        
-        
+
+        <!-- Gráfico movido debajo de los contenedores -->
+        <div class="chart-container">
+            <h2 class="panel-title"><i class="fas fa-chart-line"></i> Gráfico de Resultados</h2>
+            <canvas id="resultsChart"></canvas>
+        </div>
     </div>
 
     <script>
         let chart = null;
+        let simulationData = null;
         
         function simulate() {
+            // Limpiar mensajes y resultados anteriores
+            document.getElementById('warningContainer').innerHTML = '';
+            document.getElementById('resultsTable').innerHTML = '';
+            document.getElementById('responseInfoContainer').innerHTML = '';
+            
             // Obtener parámetros del circuito
             const R = parseFloat(document.getElementById('resistance').value);
             const L = parseFloat(document.getElementById('inductance').value);
@@ -376,222 +431,280 @@
             const V = parseFloat(document.getElementById('voltage').value);
             const I0 = parseFloat(document.getElementById('initialCurrent').value);
             const Q0 = parseFloat(document.getElementById('initialCharge').value);
-            const h = parseFloat(document.getElementById('stepSize').value);
+            let h = parseFloat(document.getElementById('stepSize').value);
             const simulationTime = parseFloat(document.getElementById('simulationTime').value);
             const inputType = document.getElementById('inputType').value;
             
             // Validar entradas
             if (isNaN(R) || isNaN(L) || isNaN(C) || isNaN(V) || isNaN(I0) || isNaN(Q0) || isNaN(h) || isNaN(simulationTime)) {
-                alert("Por favor ingrese valores válidos para todos los parámetros.");
+                showWarning("Por favor ingrese valores válidos para todos los parámetros.");
                 return;
             }
             
             if (L <= 0 || C <= 0 || h <= 0 || simulationTime <= 0) {
-                alert("Los valores de inductancia, capacitancia, tamaño de paso y tiempo de simulación deben ser mayores que cero.");
+                showWarning("Los valores de inductancia, capacitancia, tamaño de paso y tiempo de simulación deben ser mayores que cero.");
                 return;
             }
             
-            // Calcular frecuencia natural y factor de amortiguamiento
+            // Calcular frecuencia natural para ajustar el paso de tiempo si es necesario
             const omega0 = 1 / Math.sqrt(L * C);
             const alpha = R / (2 * L);
             const dampingRatio = alpha / omega0;
             
+            // Ajustar automáticamente el paso de tiempo si es demasiado grande
+            const maxStableStep = 0.1 / omega0;
+            let stepAdjusted = false;
+            if (h > maxStableStep) {
+                h = maxStableStep;
+                document.getElementById('stepSize').value = h.toFixed(6);
+                showWarning(`El tamaño de paso se ajustó a ${h.toFixed(6)} para garantizar estabilidad numérica. 
+                           El paso máximo recomendado es 0.1/ω₀ ≈ ${maxStableStep.toExponential(2)} s.`);
+                stepAdjusted = true;
+            }
+            
+            // Verificar si el tiempo de simulación es demasiado largo para la visualización
+            const maxPoints = 10000; // Límite para evitar sobrecarga del navegador
+            const estimatedPoints = Math.ceil(simulationTime / h);
+            if (estimatedPoints > maxPoints) {
+                const recommendedTime = (maxPoints * h).toFixed(4);
+                showWarning(`Advertencia: Se calcularán aproximadamente ${estimatedPoints} puntos. 
+                           Para mejor rendimiento, reduzca el tiempo de simulación a menos de ${recommendedTime} s 
+                           o aumente el tamaño del paso.`);
+            }
+            
             // Inicializar arrays para almacenar resultados
             const timePoints = [];
             const currentPoints = [];
-            const chargePoints = [];
             const voltagePoints = [];
+            const capacitorVoltagePoints = [];
             
             // Condiciones iniciales
             let t = 0;
             let I = I0;
-            let Q = Q0;
+            let Vc = Q0 / C; // Voltaje inicial en el capacitor
             
-            // Implementación del método de Euler
-            while (t <= simulationTime) {
-                timePoints.push(t);
-                currentPoints.push(I);
-                chargePoints.push(Q);
-                
-                // Calcular voltaje según el tipo de entrada
-                let Vt;
-                if (inputType === 'step') {
-                    Vt = V; // Escalón DC
-                } else {
-                    Vt = V * Math.sin(2 * Math.PI * omega0 * t); // Sinusoidal AC
+            // Implementación del método de Euler mejorado
+            try {
+                while (t <= simulationTime) {
+                    timePoints.push(t);
+                    currentPoints.push(I);
+                    capacitorVoltagePoints.push(Vc);
+                    
+                    // Calcular voltaje según el tipo de entrada
+                    let Vt;
+                    if (inputType === 'step') {
+                        Vt = V; // Escalón DC
+                    } else {
+                        Vt = V * Math.sin(2 * Math.PI * omega0 * t); // Sinusoidal AC
+                    }
+                    voltagePoints.push(Vt);
+                    
+                    // Ecuaciones diferenciales CORRECTAS para circuito RLC en serie
+                    const dIdt = (Vt - R * I - Vc) / L;
+                    const dVcdt = I / C;
+                    
+                    // Aplicar método de Euler
+                    I = I + h * dIdt;
+                    Vc = Vc + h * dVcdt;
+                    
+                    t = parseFloat((t + h).toFixed(10)); // Evitar errores de precisión
+                    
+                    // Verificar valores numéricos extremos
+                    if (Math.abs(I) > 1e10 || Math.abs(Vc) > 1e10) {
+                        throw new Error("La simulación ha divergido. Intente con un paso de tiempo más pequeño.");
+                    }
                 }
-                voltagePoints.push(Vt);
-                
-                // Ecuaciones diferenciales para circuito RLC en serie
-                const dQdt = I;
-                const dIdt = (Vt - R * I - Q / C) / L;
-                
-                // Aplicar método de Euler
-                Q = Q + h * dQdt;
-                I = I + h * dIdt;
-                
-                t = parseFloat((t + h).toFixed(10)); // Evitar errores de precisión
+            } catch (error) {
+                showWarning("Error en la simulación: " + error.message);
+                return;
             }
             
+            // Almacenar datos para posible exportación
+            simulationData = {
+                time: timePoints,
+                current: currentPoints,
+                capacitorVoltage: capacitorVoltagePoints,
+                sourceVoltage: voltagePoints,
+                params: { R, L, C, V, I0, Q0, h, simulationTime, inputType }
+            };
+            
             // Mostrar resultados en gráfico
-            plotResults(timePoints, currentPoints, chargePoints, voltagePoints);
+            plotResults(timePoints, currentPoints, capacitorVoltagePoints, voltagePoints);
             
             // Mostrar tabla con resultados
-            displayResultsTable(timePoints, currentPoints, chargePoints, voltagePoints);
+            displayResultsTable(timePoints, currentPoints, capacitorVoltagePoints, voltagePoints);
             
             // Mostrar información sobre el tipo de respuesta
             displayResponseInfo(dampingRatio, omega0, alpha);
         }
         
-        function plotResults(time, current, charge, voltage) {
+        function showWarning(message) {
+            const warningContainer = document.getElementById('warningContainer');
+            warningContainer.innerHTML = `
+                <div class="warning-message">
+                    <i class="fas fa-exclamation-triangle"></i>
+                    <div>${message}</div>
+                </div>
+            `;
+        }
+        
+        function plotResults(time, current, capacitorVoltage, voltage) {
             const ctx = document.getElementById('resultsChart').getContext('2d');
             
-            // Destruir gráfico anterior si existe
+            // Destruir gráfico 
             if (chart) {
                 chart.destroy();
             }
             
-            chart = new Chart(ctx, {
-                type: 'line',
-                data: {
-                    labels: time,
-                    datasets: [
-                        {
-                            label: 'Corriente (A)',
-                            data: current,
-                            borderColor: '#4361ee',
-                            backgroundColor: 'rgba(67, 97, 238, 0.1)',
-                            borderWidth: 2,
-                            tension: 0.1,
-                            yAxisID: 'y',
-                            fill: true
-                        },
-                        {
-                            label: 'Carga (C)',
-                            data: charge,
-                            borderColor: '#f72585',
-                            backgroundColor: 'rgba(247, 37, 133, 0.1)',
-                            borderWidth: 2,
-                            tension: 0.1,
-                            yAxisID: 'y1',
-                            fill: true
-                        },
-                        {
-                            label: 'Voltaje de fuente (V)',
-                            data: voltage,
-                            borderColor: '#4cc9f0',
-                            borderWidth: 2,
-                            borderDash: [5, 5],
-                            tension: 0.1,
-                            yAxisID: 'y'
-                        }
-                    ]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    interaction: {
-                        mode: 'index',
-                        intersect: false,
+            try {
+                chart = new Chart(ctx, {
+                    type: 'line',
+                    data: {
+                        labels: time,
+                        datasets: [
+                            {
+                                label: 'Corriente (A)',
+                                data: current,
+                                borderColor: '#4361ee',
+                                backgroundColor: 'rgba(67, 97, 238, 0.1)',
+                                borderWidth: 2,
+                                tension: 0.1,
+                                yAxisID: 'y',
+                                fill: true
+                            },
+                            {
+                                label: 'Voltaje en Capacitor (V)',
+                                data: capacitorVoltage,
+                                borderColor: '#f72585',
+                                backgroundColor: 'rgba(247, 37, 133, 0.1)',
+                                borderWidth: 2,
+                                tension: 0.1,
+                                yAxisID: 'y1',
+                                fill: true
+                            },
+                            {
+                                label: 'Voltaje de fuente (V)',
+                                data: voltage,
+                                borderColor: '#4cc9f0',
+                                borderWidth: 2,
+                                borderDash: [5, 5],
+                                tension: 0.1,
+                                yAxisID: 'y1'
+                            }
+                        ]
                     },
-                    plugins: {
-                        tooltip: {
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        interaction: {
                             mode: 'index',
-                            intersect: false
+                            intersect: false,
                         },
-                        legend: {
-                            position: 'top',
-                        }
-                    },
-                    scales: {
-                        x: {
-                            title: {
-                                display: true,
-                                text: 'Tiempo (s)',
-                                font: {
-                                    weight: 'bold'
-                                }
+                        plugins: {
+                            tooltip: {
+                                mode: 'index',
+                                intersect: false
                             },
-                            grid: {
-                                display: true,
-                                color: 'rgba(0, 0, 0, 0.05)'
+                            legend: {
+                                position: 'top',
                             }
                         },
-                        y: {
-                            type: 'linear',
-                            display: true,
-                            position: 'left',
-                            title: {
-                                display: true,
-                                text: 'Corriente (A) / Voltaje (V)',
-                                font: {
-                                    weight: 'bold'
+                        scales: {
+                            x: {
+                                title: {
+                                    display: true,
+                                    text: 'Tiempo (s)',
+                                    font: {
+                                        weight: 'bold'
+                                    }
+                                },
+                                grid: {
+                                    display: true,
+                                    color: 'rgba(0, 0, 0, 0.05)'
                                 }
                             },
-                            grid: {
+                            y: {
+                                type: 'linear',
                                 display: true,
-                                color: 'rgba(0, 0, 0, 0.05)'
-                            }
-                        },
-                        y1: {
-                            type: 'linear',
-                            display: true,
-                            position: 'right',
-                            title: {
-                                display: true,
-                                text: 'Carga (C)',
-                                font: {
-                                    weight: 'bold'
+                                position: 'right',
+                                title: {
+                                    display: true,
+                                    text: 'Corriente (A)',
+                                    font: {
+                                        weight: 'bold'
+                                    }
+                                },
+                                grid: {
+                                    display: true,
+                                    color: 'rgba(0, 0, 0, 0.05)'
                                 }
                             },
-                            grid: {
-                                drawOnChartArea: false,
-                                color: 'rgba(0, 0, 0, 0.05)'
+                            y1: {
+                                type: 'linear',
+                                display: true,
+                                position: 'left',
+                                title: {
+                                    display: true,
+                                    text: 'Voltaje (V)',
+                                    font: {
+                                        weight: 'bold'
+                                    }
+                                },
+                                grid: {
+                                    drawOnChartArea: false,
+                                    color: 'rgba(0, 0, 0, 0.05)'
+                                }
                             }
                         }
                     }
-                }
-            });
+                });
+            } catch (error) {
+                showWarning("Error al mostrar el gráfico: " + error.message);
+            }
         }
         
-        function displayResultsTable(time, current, charge, voltage) {
+        function displayResultsTable(time, current, capacitorVoltage, voltage) {
             let tableHTML = `
                 <thead>
                     <tr>
                         <th>Tiempo (s)</th>
                         <th>Corriente (A)</th>
-                        <th>Carga (C)</th>
-                        <th>Voltaje (V)</th>
+                        <th>V. Capacitor (V)</th>
+                        <th>V. Fuente (V)</th>
                     </tr>
                 </thead>
                 <tbody>
             `;
             
-            // Mostrar solo algunos puntos para no saturar la tabla
-            const step = Math.max(1, Math.floor(time.length / 20));
-            for (let i = 0; i < time.length; i += step) {
+            try {
+                // Mostrar solo algunos puntos para no saturar la tabla
+                const step = Math.max(1, Math.floor(time.length / 20));
+                for (let i = 0; i < time.length; i += step) {
+                    tableHTML += `
+                        <tr>
+                            <td>${time[i].toFixed(6)}</td>
+                            <td>${current[i].toFixed(4)}</td>
+                            <td>${capacitorVoltage[i].toFixed(4)}</td>
+                            <td>${voltage[i].toFixed(4)}</td>
+                        </tr>
+                    `;
+                }
+                
                 tableHTML += `
-                    <tr>
-                        <td>${time[i].toFixed(4)}</td>
-                        <td>${current[i].toFixed(6)}</td>
-                        <td>${charge[i].toFixed(6)}</td>
-                        <td>${voltage[i].toFixed(4)}</td>
-                    </tr>
+                    </tbody>
+                    <tfoot>
+                        <tr>
+                            <td colspan="4" style="text-align: center; font-size: 0.9rem; color: var(--gray-color);">
+                                Mostrando ${Math.floor(time.length/step)} de ${time.length} puntos calculados
+                            </td>
+                        </tr>
+                    </tfoot>
                 `;
+                
+                document.getElementById('resultsTable').innerHTML = tableHTML;
+            } catch (error) {
+                showWarning("Error al mostrar la tabla de resultados: " + error.message);
             }
-            
-            tableHTML += `
-                </tbody>
-                <tfoot>
-                    <tr>
-                        <td colspan="4" style="text-align: center; font-size: 0.9rem; color: var(--gray-color);">
-                            Mostrando ${Math.floor(time.length/step)} de ${time.length} puntos calculados
-                        </td>
-                    </tr>
-                </tfoot>
-            `;
-            
-            document.getElementById('resultsTable').innerHTML = tableHTML;
         }
         
         function displayResponseInfo(dampingRatio, omega0, alpha) {
@@ -600,7 +713,7 @@
             if (dampingRatio > 1) {
                 badgeClass = 'badge-overdamped';
                 badgeText = 'Sobreamortiguado';
-            } else if (dampingRatio === 1) {
+            } else if (Math.abs(dampingRatio - 1) < 1e-6) {
                 badgeClass = 'badge-critical';
                 badgeText = 'Críticamente amortiguado';
             } else {
@@ -608,40 +721,85 @@
                 badgeText = 'Subamortiguado';
             }
             
-            let responseInfo = `
-                <div class="info-box">
-                    <h4 class="info-title"><i class="fas fa-info-circle"></i> Información de la Respuesta</h4>
-                    <div class="info-item">
-                        <strong>Frecuencia natural (ω₀):</strong> ${omega0.toFixed(4)} rad/s
-                    </div>
-                    <div class="info-item">
-                        <strong>Factor de amortiguamiento (α):</strong> ${alpha.toFixed(4)}
-                    </div>
-                    <div class="info-item">
-                        <strong>Relación de amortiguamiento (ζ):</strong> ${dampingRatio.toFixed(4)}
-                    </div>
-                    <div class="info-item">
-                        <strong>Tipo de respuesta:</strong> 
-                        <span class="badge ${badgeClass}">${badgeText} (ζ ${dampingRatio > 1 ? '>' : dampingRatio === 1 ? '=' : '<'} 1)</span>
-                    </div>
-            `;
-            
-            if (dampingRatio < 1) {
-                const omegaD = Math.sqrt(omega0*omega0 - alpha*alpha);
-                responseInfo += `
-                    <div class="info-item">
-                        <strong>Frecuencia amortiguada (ωₔ):</strong> ${omegaD.toFixed(4)} rad/s
-                    </div>
+            try {
+                let responseInfo = `
+                    <div class="info-box">
+                        <h4 class="info-title"><i class="fas fa-info-circle"></i> Información de la Respuesta</h4>
+                        <div class="info-item">
+                            <strong>Frecuencia natural (ω₀):</strong> ${omega0.toFixed(1)} rad/s (${(omega0/(2*Math.PI)).toFixed(4)} Hz)
+                        </div>
+                        <div class="info-item">
+                            <strong>Factor de amortiguamiento (α):</strong> ${alpha.toFixed(1)}
+                        </div>
+                        <div class="info-item">
+                            <strong>Relación de amortiguamiento (ζ):</strong> ${dampingRatio.toFixed(1)}
+                        </div>
+                        <div class="info-item">
+                            <strong>Tipo de respuesta:</strong> 
+                            <span class="badge ${badgeClass}">${badgeText} (ζ ${dampingRatio > 1 ? '>' : Math.abs(dampingRatio - 1) < 1e-6 ? '=' : '<'} 1)</span>
+                        </div>
                 `;
+                
+                if (dampingRatio < 1) {
+                    const omegaD = Math.sqrt(Math.max(0, omega0*omega0 - alpha*alpha));
+                    responseInfo += `
+                        <div class="info-item">
+                            <strong>Frecuencia amortiguada (ωₔ):</strong> ${omegaD.toFixed(4)} rad/s (${(omegaD/(2*Math.PI)).toFixed(4)} Hz)
+                        </div>
+                    `;
+                }
+                
+                responseInfo += `</div>`;
+                
+                document.getElementById('responseInfoContainer').innerHTML = responseInfo;
+            } catch (error) {
+                showWarning("Error al mostrar la información de respuesta: " + error.message);
+            }
+        }
+        
+        function exportToCSV() {
+            if (!simulationData) {
+                showWarning("No hay datos de simulación para exportar.");
+                return;
             }
             
-            responseInfo += `</div>`;
-            
-            // Insertar después de la tabla
-            const resultsContainer = document.querySelector('.results-container');
-            resultsContainer.insertAdjacentHTML('beforeend', responseInfo);
+            try {
+                const { time, current, capacitorVoltage, sourceVoltage, params } = simulationData;
+                
+                // Crear encabezado CSV
+                let csvContent = "Tiempo (s),Corriente (A),Voltaje Capacitor (V),Voltaje Fuente (V)\n";
+                
+                // Agregar datos
+                for (let i = 0; i < time.length; i++) {
+                    csvContent += `${time[i].toFixed(6)},${current[i].toFixed(4)},${capacitorVoltage[i].toFixed(4)},${sourceVoltage[i].toFixed(4)}\n`;
+                }
+                
+                // Agregar metadatos
+                csvContent += "\nParámetros de la simulación:\n";
+                csvContent += `Resistencia (R),${params.R} Ω\n`;
+                csvContent += `Inductancia (L),${params.L} H\n`;
+                csvContent += `Capacitancia (C),${params.C} F\n`;
+                csvContent += `Voltaje fuente,${params.V} V\n`;
+                csvContent += `Corriente inicial,${params.I0} A\n`;
+                csvContent += `Carga inicial,${params.Q0} C\n`;
+                csvContent += `Tamaño de paso,${params.h} s\n`;
+                csvContent += `Tiempo simulación,${params.simulationTime} s\n`;
+                csvContent += `Tipo de entrada,${params.inputType}\n`;
+                
+                // Crear archivo y descargar
+                const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+                const url = URL.createObjectURL(blob);
+                const link = document.createElement('a');
+                link.setAttribute('href', url);
+                link.setAttribute('download', `simulacion_rlc_${new Date().toISOString().slice(0,10)}.csv`);
+                link.style.visibility = 'hidden';
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+            } catch (error) {
+                showWarning("Error al exportar datos: " + error.message);
+            }
         }
     </script>
 </body>
-</html>
 </html>
